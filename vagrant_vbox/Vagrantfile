@@ -1,0 +1,19 @@
+
+Vagrant::Config.run do |config|
+  config.vm.box = "gerrit"
+  config.vm.box_url = "http://updates.sdesigns.com/vagrant/boxes/precise-server-cloudimg-vagrant-amd64-disk1.box"
+
+  # config.vm.boot_mode = :gui
+  # config.vm.network :hostonly, "192.168.33.10"
+
+  # Forward a port from the guest to the host, which allows for outside
+  # computers to access the VM, whereas host only networking does not.
+  config.vm.forward_port 80, 8080
+  config.vm.forward_port 22, 2222
+  config.ssh.forward_agent = true
+  # config.vm.share_folder "v-data", "/vagrant_data", "../data"
+
+  config.vm.provision :puppet do |puppet|
+	puppet.module_path = ""
+  end
+end
