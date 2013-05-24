@@ -58,7 +58,16 @@ class gerrit {
     require    => Group["$gerrit_group"],
 	password   => '$1$OPeeLkJz$jfxWJ1rsyx6.Mr2fZYPMB/'
   }
-  
+
+  augeas { "add_user_sudoers":
+    context => "/files/etc/sudoers",
+    changes => [
+                "set spec[user = '$gerrit_user']/user $gerrit_user",
+                "set spec[user = '$gerrit_user']/host_group/host ALL",
+                "set spec[user = '$gerrit_user']/host_group/command ALL",
+                "set spec[user = '$gerrit_user']/host_group/command/runas_user ALL",
+                ],
+  }
   
   # Correct gerrit_home uid & gid
   file { "${gerrit_home}":
@@ -114,10 +123,22 @@ class gerrit {
                     ],
   }
 
+  file {'/etc/default/gerritcodereview':
+    ensure  => present,
+    content => "GERRIT_SITE=${gerrit_home}/${gerrit_site_name}\n",
+    owner   => $gerrit_user,
+    group   => $gerrit_group,
+    mode    => '0444',
+    require => Exec['init_gerrit']
+  }
+  
   file {'/etc/init.d/gerrit':
     ensure  => symlink,
     target  => "${gerrit_home}/${gerrit_site_name}/bin/gerrit.sh",
-    require => Exec['init_gerrit']
+    require => [
+                Exec['init_gerrit'],
+                File['/etc/default/gerritcodereview']
+    ]
   }
     
   # Manage Gerrit's configuration file (augeas would be more suitable).
@@ -133,6 +154,7 @@ class gerrit {
   service { 'gerrit':
     ensure    => running,
     hasstatus => false,
+    pattern   => 'GerritCodeReview',
     require   => File['/etc/init.d/gerrit']
   }
 }
